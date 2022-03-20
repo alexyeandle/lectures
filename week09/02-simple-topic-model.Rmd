@@ -22,15 +22,21 @@ library("zoo")
 In this notebook, we will study a topic model estimated on the PDF of Newton's Principia (1687) which we just downloaded. Reading the book into R with `pdftools` and creating a document frequency matrix with `quanteda`:
 
 ```{r}
+
+## Read in Principia and run basic cleaning
+
 principia <- pdf_text("principia.pdf")
 principia <- principia[3:length(principia)]
 principia <- str_replace_all(principia, "[\r\n]" , "")
 ```
 
 ```{r}
+
+## Convert to dfm 
+
 principia_dfm <- principia %>% corpus %>%
   tokens(remove_punct = TRUE, remove_numbers = TRUE) %>%
-  tokens_remove(stopwords("en"), padding = TRUE) %>%
+  tokens_remove(stopwords("en"), padding = TRUE) %>% #Padding = True leaves a placeholder where stopwords previously were, useful for making bigrams
   tokens_ngrams(n = 1:2) %>% # up to bigrams
   dfm() %>%
   dfm_trim(min_termfreq = 3)
@@ -42,15 +48,20 @@ Note that we only look at one book in this simple example and that we treat each
 Converting the `quanteda` object into an input for the structural topic model:
 
 ```{r}
+## Bridging function to convert to object we can use with stm package
 stm_input <- convert(principia_dfm, to = "stm")
 ```
 
 In this first example, we will estimate a very simple model with only 3 topics. Note that if we do not supply any covariates, the `stm` package estimates a standard correlated topic model. Hence, we can also use `stm` for general topic modeling without additional covariates. Note that the "spectral" initialisation will always return the same model (differences can only result from varying numerical precision on different computers). For other initialisations, we could set a pseudo random number seed in order to obtain the same result again, this can be done with the `seed` option in the `stm` function.
 
 ```{r}
+
+## No covariates, so estimates a correlated topic model (allows for correlation between the topics)
+
 ctmodel <- stm(stm_input$documents, stm_input$vocab, K = 3,
                data = stm_input$meta, verbose = FALSE,
                init.type = c("Spectral"), seed = 123) 
+
 ```
 
 Top words in all topics:
@@ -62,9 +73,9 @@ plot(ctmodel)
 And individual word clouds for each topic:
 
 ```{r}
-cloud(ctmodel, topic = 1, scale = c(2,.25))
-cloud(ctmodel, topic = 2, scale = c(2,.25))
-cloud(ctmodel, topic = 3, scale = c(2,.25))
+cloud(ctmodel, topic = 1, scale = c(2,.25)) ## Maths/grammar
+cloud(ctmodel, topic = 2, scale = c(2,.25)) ## Astronomy
+cloud(ctmodel, topic = 3, scale = c(2,.25)) ## Mechanics
 ```
 
 It seems we have identified three broad themes: A topic that contains terms such as "sun" or "comet" that we could call "astronomy", one that contains terms regarding geometry, equations, and algebra which we could term "maths", and a last topic containing words related to force and motion that we could term "mechanics" (although of course other parts of the book are about this topic as well).
@@ -75,7 +86,7 @@ We can also access the key output matrices of the model as discussed in the lect
 theta <- ctmodel$theta
 dim(theta)
 
-beta <- exp(ctmodel$beta$logbeta[[1]])
+beta <- exp(ctmodel$beta$logbeta[[1]]) ## package saves only log beta, so we have to manually exponentiate
 dim(beta)
 
 vocabulary <- ctmodel$vocab
@@ -93,7 +104,7 @@ plot_data$Mechanics <- theta[,2]
 plot_data$Astronomy <- theta[,3]
 
 plot_data[,c("Maths", "Mechanics", "Astronomy")] <-
-  rollmean(plot_data[,c("Maths", "Mechanics", "Astronomy")], 10,
+  rollmean(plot_data[,c("Maths", "Mechanics", "Astronomy")], 10, ## 10 page rolling average so not too erratic in plots
            align = "right", na.pad = TRUE)
 
 plot_data <- pivot_longer(plot_data,

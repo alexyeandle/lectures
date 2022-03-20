@@ -83,19 +83,22 @@ stm_input <- convert(posts_dfm, to = "stm")
 To obtain some quantitative diagnostics, you can run a code chunk like the following, however, it can run for several hours already on a dataset of this size. You could run it after this coding sessions for a smaller set of K values to try it out.
 
 ```{r, eval = FALSE}
-k_search_output <- searchK(stm_input$documents, stm_input$vocab,
+#k_search_output <- searchK(stm_input$documents, stm_input$vocab,
                            K = c(5, 10, 25, 50, 100), data = stm_input$meta,
                            verbose = FALSE, heldout.seed = 123)
-plot(k_search_output)
-k_search_output
+#plot(k_search_output)
+#k_search_output
 ```
 
 For this notebook, we will choose K=50 because this value allows to illustrate certain cases in this example. When estimating the topic model, we provide a smoothed version of the day of the year and the politician's party as topic prevalence covariates and do not specify any topic content covariates for now. Already estimating this one model will take some time on the approximately 9,600 documents.
 
 ```{r}
 stmodel <- stm(documents = stm_input$documents, vocab = stm_input$vocab,
-                     K = 50, prevalence =~ party + s(day_of_year),
+                     K = 50, prevalence =~ party + s(day_of_year), # s() means "smoothed" version of this
                data = stm_input$meta, verbose = FALSE, init.type = "Spectral")
+
+## Prevalence covariates: might be different topic shares in each document given covariates
+## We don't use topic content covariates (so we assume the words that construct each topic are constant)
 ```
 
 
@@ -139,8 +142,12 @@ This emphasises the importance of such an analysis when fitting, evaluating, and
 Another great feature of the structural topic model package is that the prevalence covariates allow to see which topics are discussed more by which of the two groups: 
 
 ```{r}
+
+## i.e. THIS IS WHERE WE GET WHETHER STAT. SIG DIFFERENCES ACROSS GROUPS
+
 # 1:50 refers to topic 1-50
 effect_estimates <- estimateEffect(1:50 ~ party + s(day_of_year), stmodel, meta = stm_input$meta)
+
 ```
 
 
