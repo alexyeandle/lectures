@@ -25,7 +25,7 @@ As an example, let us consider Newton's Principia (1687) in its English translat
 
 The PDF is parsed into R using the `pdf_text` function which returns a character vector with one row corresponding to one page:
 
-```{r}
+```{r} 
 principia <- pdf_text("principia.pdf")
 class(principia)
 length(principia)
@@ -35,14 +35,14 @@ Deleting the first two pages which have been added by Google, deleting new line 
 
 ```{r}
 principia <- principia[3:length(principia)]
-principia <- str_replace_all(principia, "[\r\n]" , "")
+principia <- str_replace_all(principia, "[\r\n]" , "") ## Remove automated codes on each page created by Google Books
 ```
 
 And transforming the data into a `quanteda` corpus:
 
 ```{r}
 principia_corpus <- principia %>% corpus(
-  docvars = data.frame(page=1:length(principia)))
+  docvars = data.frame(page=1:length(principia))) ## Add docvar which is count of page
 ```
 
 
